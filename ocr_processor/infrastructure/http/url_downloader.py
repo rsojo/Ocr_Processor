@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from typing import Tuple
 from urllib.parse import urlparse, unquote
 
@@ -9,16 +10,6 @@ from ocr_processor.domain.contracts import IURLDownloader
 from ocr_processor.domain.exceptions import DownloadError
 
 logger = logging.getLogger(__name__)
-
-
-def _filename_from_url(url: str, content_type: str) -> str:
-    """Derive a safe filename from URL path or content-type."""
-    path = unquote(urlparse(url).path)
-    name = Path(path).name if path and path != "/" else ""
-    if not name:
-        ext = _ext_for_content_type(content_type)
-        name = f"download{ext}"
-    return name
 
 
 def _ext_for_content_type(content_type: str) -> str:
@@ -33,7 +24,14 @@ def _ext_for_content_type(content_type: str) -> str:
     return mapping.get(content_type.split(";")[0].strip(), "")
 
 
-from pathlib import Path  # noqa: E402 (needed by helper above)
+def _filename_from_url(url: str, content_type: str) -> str:
+    """Derive a safe filename from URL path or content-type."""
+    path = unquote(urlparse(url).path)
+    name = Path(path).name if path and path != "/" else ""
+    if not name:
+        ext = _ext_for_content_type(content_type)
+        name = f"download{ext}"
+    return name
 
 
 class HTTPURLDownloader(IURLDownloader):
