@@ -7,6 +7,7 @@ from ocr_processor.domain.contracts import IOCREngine
 from ocr_processor.domain.entities import OCRResult
 from ocr_processor.domain.exceptions import OCRProcessingError
 from ocr_processor.domain.value_objects import OCREngine
+from ocr_processor.infrastructure.ocr.markdown_cleaner import clean_markdown
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +118,7 @@ class PdfInspectorEngine(IOCREngine):
             )
 
             if pdf_type in ("text_based", "mixed") and result.markdown:
-                markdown = result.markdown
+                markdown = clean_markdown(result.markdown)
                 text = ""  # text is not returned in API when markdown is present
                 # page_count is not part of pdf-inspector's public Python API;
                 # estimate it from embedded page markers when present.
