@@ -38,4 +38,5 @@ class ProcessFileUseCase:
             filename=document.filename,
             document_id=document.id,
             created_at=result.created_at,
+            markdown=result.markdown,
         )

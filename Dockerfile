@@ -1,9 +1,29 @@
 # Stage 1: build dependencies
 FROM python:3.11-slim AS builder
 
+# Install system tools needed to build Rust extensions
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install the Rust toolchain (required to compile pdf-inspector)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+    | sh -s -- -y --default-toolchain stable
+ENV PATH="/root/.cargo/bin:${PATH}"
+
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# Clone and build pdf-inspector pinned to a specific commit for reproducibility.
+RUN git clone https://github.com/firecrawl/pdf-inspector /tmp/pdf-inspector \
+    && git -C /tmp/pdf-inspector checkout 6466e5927107a51d9f12243c433400092f38735f
+WORKDIR /tmp/pdf-inspector
+RUN pip install maturin
+RUN maturin build --release --out /tmp/pdf-inspector-wheels
+RUN pip install --prefix=/install /tmp/pdf-inspector-wheels/*.whl
 
 # Stage 2: runtime
 FROM python:3.11-slim

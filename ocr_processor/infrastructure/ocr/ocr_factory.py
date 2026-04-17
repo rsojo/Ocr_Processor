@@ -21,6 +21,12 @@ class OCREngineFactory:
             )
 
             return PaddleOCREngine()
+        if engine == OCREngine.PDF_INSPECTOR:
+            from ocr_processor.infrastructure.ocr.pdf_inspector_engine import (
+                PdfInspectorEngine,
+            )
+
+            return PdfInspectorEngine()
         raise ValueError(
-            f"Unknown OCR engine '{engine}'. Supported: tesseract, paddleocr"
+            f"Unknown OCR engine '{engine}'. Supported: tesseract, paddleocr, pdf_inspector"
         )
