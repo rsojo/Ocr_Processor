@@ -19,6 +19,8 @@ Key patterns:
 - **Factory** — `OCREngineFactory` creates the engine from the `OCR_ENGINE` env var.
 - **Dependency Injection** — FastAPI `Depends()` wires everything together.
 - **Repository** — `IFileStorage` / `IURLDownloader` abstract away I/O.
+- **Concurrent page OCR** — PDFs are split by page, processed concurrently, and reassembled in original order.
+- **Structured Markdown** — generated output includes page and structure markers (tables/graphics) for downstream parsing.
 
 ---
 
