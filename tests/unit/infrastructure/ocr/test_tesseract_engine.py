@@ -4,7 +4,7 @@ from pathlib import Path
 from ocr_processor.infrastructure.ocr.tesseract_engine import TesseractOCREngine
 
 
-def test_pdf_ocr_is_concurrent_and_preserves_page_order(monkeypatch):
+def test_pdf_concurrent_processing_preserves_order_and_generates_markdown(monkeypatch):
     pages = ["page-1", "page-2", "page-3"]
     delays = {"page-1": 0.05, "page-2": 0.01, "page-3": 0.0}
     outputs = {

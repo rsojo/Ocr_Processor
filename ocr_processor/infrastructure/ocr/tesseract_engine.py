@@ -22,9 +22,22 @@ pytesseract.pytesseract.tesseract_cmd = settings.tesseract_cmd
 _PAGE_MARKER_PREFIX = "<!-- Page"
 _TABLE_MARKER = "<!-- TABLE -->"
 _GRAPHIC_MARKER = "<!-- GRAPHIC -->"
-_TABLE_LIKE_LINE = re.compile(r"(\|.+\|)|(\t+)|(\S+\s{2,}\S+)")
+_TABLE_LIKE_LINE = re.compile(
+    r"([^|\n]+\|[^|\n]+)|(\S+\t+\S+)"
+)
+_GRAPHIC_KEYWORDS = (
+    "graph",
+    "chart",
+    "figure",
+    "figura",
+    # Keep both variants to cover OCR outputs with/without accents.
+    "grafica",
+    "gráfica",
+    "plot",
+    "diagram",
+)
 _GRAPHIC_LIKE_LINE = re.compile(
-    r"\b(graph|chart|figure|figura|grafica|gráfica|plot|diagram)\b",
+    r"\b(" + "|".join(re.escape(keyword) for keyword in _GRAPHIC_KEYWORDS) + r")\b",
     re.IGNORECASE,
 )
 
@@ -57,7 +70,7 @@ def _ocr_pages_concurrently(pages: list, language: str) -> list[str]:
     if len(pages) == 1:
         return [pytesseract.image_to_string(pages[0], lang=language)]
 
-    max_workers = min(len(pages), max(cpu_count() or 1, 1))
+    max_workers = min(len(pages), cpu_count() or 1)
     ordered_results: list[str] = [""] * len(pages)
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
@@ -69,7 +82,9 @@ def _ocr_pages_concurrently(pages: list, language: str) -> list[str]:
             try:
                 ordered_results[page_index] = future.result()
             except Exception as exc:  # noqa: BLE001
-                raise OCRProcessingError(f"Page OCR failed: {exc}") from exc
+                raise OCRProcessingError(
+                    f"OCR failed for page {page_index + 1} of {len(pages)}: {exc}"
+                ) from exc
     return ordered_results
 
 
