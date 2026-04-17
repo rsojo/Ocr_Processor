@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, Depends, Request, UploadFile
 
 from ocr_processor.application.dtos import ProcessFileInput
@@ -36,13 +38,14 @@ async def ocr_upload(
     request_id = getattr(request.state, "request_id", "unknown")
     data = await file.read()
     content_type = file.content_type or "application/octet-stream"
-    result = use_case.execute(
+    result = await asyncio.to_thread(
+        use_case.execute,
         ProcessFileInput(
             filename=file.filename or "upload",
             content_type=content_type,
             data=data,
         ),
-        request_id=request_id,
+        request_id,
     )
     return OCRResponse(
         request_id=result.request_id,

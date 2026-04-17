@@ -21,7 +21,6 @@ class ProcessURLInput:
 class OCRResultDTO:
     request_id: str
     status: str
-    text: str
     language: str
     page_count: int
     processing_time_ms: float
@@ -29,5 +28,6 @@ class OCRResultDTO:
     filename: str
     document_id: UUID
     created_at: datetime
+    text: Optional[str] = None
     error: Optional[str] = None
     markdown: Optional[str] = None

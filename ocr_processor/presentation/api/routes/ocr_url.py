@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, Depends, Request
 
 from ocr_processor.application.dtos import ProcessURLInput
@@ -42,9 +44,10 @@ async def ocr_url(
 ):
     """Download a file from a URL and extract text via OCR."""
     request_id = getattr(request.state, "request_id", "unknown")
-    result = use_case.execute(
+    result = await asyncio.to_thread(
+        use_case.execute,
         ProcessURLInput(url=str(body.url), language=body.language),
-        request_id=request_id,
+        request_id,
     )
     return OCRResponse(
         request_id=result.request_id,

@@ -13,7 +13,7 @@ class OCRURLRequest(BaseModel):
 class OCRResponse(BaseModel):
     request_id: str
     status: str
-    text: str
+    text: Optional[str] = None
     language: str
     page_count: int
     processing_time_ms: float

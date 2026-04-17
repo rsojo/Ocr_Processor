@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     )
 
     # OCR engine
-    ocr_engine: str = "tesseract"
+    ocr_engine: str = "pdf_inspector"
     tesseract_cmd: str = "/usr/bin/tesseract"
     default_ocr_language: str = "eng"
 

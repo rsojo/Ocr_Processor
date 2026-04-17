@@ -100,11 +100,15 @@ class PdfInspectorEngine(IOCREngine):
 
         if content_type == "application/pdf":
             try:
-                result = pdf_inspector.process_pdf(str(file_path))
+                result = pdf_inspector.process_pdf(str(file_path), page_break=True)
+            except TypeError:
+                # Older builds that don't support page_break — call without it.
+                try:
+                    result = pdf_inspector.process_pdf(str(file_path))
+                except Exception as exc:  # noqa: BLE001
+                    raise OCRProcessingError(f"pdf-inspector failed: {exc}") from exc
             except Exception as exc:  # noqa: BLE001
-                raise OCRProcessingError(
-                    f"pdf-inspector failed: {exc}"
-                ) from exc
+                raise OCRProcessingError(f"pdf-inspector failed: {exc}") from exc
 
             pdf_type: str = (result.pdf_type or "").lower()
             logger.info(
@@ -114,7 +118,7 @@ class PdfInspectorEngine(IOCREngine):
 
             if pdf_type in ("text_based", "mixed") and result.markdown:
                 markdown = result.markdown
-                text = result.markdown
+                text = ""  # text is not returned in API when markdown is present
                 # page_count is not part of pdf-inspector's public Python API;
                 # estimate it from embedded page markers when present.
                 marker_count = markdown.count(_PAGE_MARKER)
@@ -131,7 +135,7 @@ class PdfInspectorEngine(IOCREngine):
             text, page_count = _tesseract_fallback(file_path, language)
 
         elapsed_ms = (time.monotonic() - start) * 1000
-        detected_lang = _detect_language(text)
+        detected_lang = _detect_language(markdown or text)
 
         logger.info(
             "pdf-inspector engine complete",

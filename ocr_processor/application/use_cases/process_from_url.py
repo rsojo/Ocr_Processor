@@ -40,7 +40,7 @@ class ProcessFromURLUseCase:
         return OCRResultDTO(
             request_id=request_id,
             status=ProcessingStatus.SUCCESS,
-            text=result.text,
+            text=None if result.markdown else result.text,
             language=result.language,
             page_count=result.page_count,
             processing_time_ms=result.processing_time_ms,
