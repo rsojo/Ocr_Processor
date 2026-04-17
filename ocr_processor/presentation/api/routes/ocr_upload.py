@@ -1,4 +1,5 @@
 import asyncio
+from functools import lru_cache
 
 from fastapi import APIRouter, Depends, Request, UploadFile
 
@@ -13,6 +14,7 @@ from ocr_processor.presentation.api.schemas import OCRResponse
 router = APIRouter()
 
 
+@lru_cache(maxsize=1)
 def get_ocr_engine() -> IOCREngine:
     return OCREngineFactory.create(settings)
 

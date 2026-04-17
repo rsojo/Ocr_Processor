@@ -1,8 +1,6 @@
 import logging
 import re
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from os import cpu_count
 from pathlib import Path
 from uuid import uuid4
 
@@ -14,6 +12,10 @@ from ocr_processor.domain.contracts import IOCREngine
 from ocr_processor.domain.entities import OCRResult
 from ocr_processor.domain.exceptions import OCRProcessingError
 from ocr_processor.domain.value_objects import OCREngine
+from ocr_processor.infrastructure.ocr._parallel import (
+    convert_pdf_to_images,
+    ocr_pages_parallel,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,16 +44,6 @@ _GRAPHIC_LIKE_LINE = re.compile(
 )
 
 
-def _convert_pdf_to_images(file_path: Path) -> list:
-    """Convert each PDF page to a PIL Image using pdf2image."""
-    try:
-        from pdf2image import convert_from_path
-
-        return convert_from_path(str(file_path))
-    except Exception as exc:  # noqa: BLE001
-        raise OCRProcessingError(f"PDF conversion failed: {exc}") from exc
-
-
 def _detect_language(text: str) -> str:
     """Best-effort language detection; fallback to 'und' (undetermined)."""
     if not text.strip():
@@ -62,30 +54,6 @@ def _detect_language(text: str) -> str:
         return detect(text)
     except Exception:  # noqa: BLE001
         return "und"
-
-
-def _ocr_pages_concurrently(pages: list, language: str) -> list[str]:
-    if not pages:
-        return []
-    if len(pages) == 1:
-        return [pytesseract.image_to_string(pages[0], lang=language)]
-
-    max_workers = min(len(pages), cpu_count() or 1)
-    ordered_results: list[str] = [""] * len(pages)
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {
-            executor.submit(pytesseract.image_to_string, page, lang=language): index
-            for index, page in enumerate(pages)
-        }
-        for future in as_completed(futures):
-            page_index = futures[future]
-            try:
-                ordered_results[page_index] = future.result()
-            except Exception as exc:  # noqa: BLE001
-                raise OCRProcessingError(
-                    f"OCR failed for page {page_index + 1} of {len(pages)}: {exc}"
-                ) from exc
-    return ordered_results
 
 
 def _mark_structural_lines(line: str) -> str:
@@ -120,11 +88,11 @@ class TesseractOCREngine(IOCREngine):
         content_type = _guess_content_type(file_path)
         try:
             if content_type == "application/pdf":
-                pages = _convert_pdf_to_images(file_path)
-                page_texts = _ocr_pages_concurrently(pages, language)
+                pages = convert_pdf_to_images(file_path)
+                page_texts = ocr_pages_parallel(pages, language)
             else:
                 image = Image.open(file_path)
-                page_texts = _ocr_pages_concurrently([image], language)
+                page_texts = ocr_pages_parallel([image], language)
         except OCRProcessingError:
             raise
         except Exception as exc:  # noqa: BLE001

@@ -23,7 +23,7 @@ class ProcessFileUseCase:
 
         file_path = self._storage.save(input_data.data, input_data.filename)
         try:
-            result = self._engine.process(file_path)
+            result = self._engine.process(file_path, language=input_data.language)
         finally:
             self._storage.cleanup(file_path)
 

@@ -43,28 +43,30 @@ def _detect_language(text: str) -> str:
 
 
 def _tesseract_fallback(file_path: Path, language: str = "eng") -> tuple[str, int]:
-    """Extract plain text via Tesseract; returns (text, page_count)."""
+    """Extract plain text via Tesseract in parallel; returns (text, page_count)."""
     try:
         import pytesseract
         from PIL import Image
 
         from ocr_processor.config import settings
+        from ocr_processor.infrastructure.ocr._parallel import (
+            convert_pdf_to_images,
+            ocr_pages_parallel,
+        )
 
         pytesseract.pytesseract.tesseract_cmd = settings.tesseract_cmd
 
         content_type = _guess_content_type(file_path)
         if content_type == "application/pdf":
-            from pdf2image import convert_from_path
-
-            pages = convert_from_path(str(file_path))
-            page_texts = [
-                pytesseract.image_to_string(page, lang=language) for page in pages
-            ]
+            pages = convert_pdf_to_images(file_path)
+            page_texts = ocr_pages_parallel(pages, language)
         else:
             image = Image.open(file_path)
-            page_texts = [pytesseract.image_to_string(image, lang=language)]
+            page_texts = ocr_pages_parallel([image], language)
 
         return "\n\n".join(page_texts).strip(), len(page_texts)
+    except OCRProcessingError:
+        raise
     except Exception as exc:  # noqa: BLE001
         raise OCRProcessingError(f"Tesseract fallback failed: {exc}") from exc
 

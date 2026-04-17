@@ -9,6 +9,7 @@ class ProcessFileInput:
     filename: str
     content_type: str
     data: bytes
+    language: str = "eng"
 
 
 @dataclass
