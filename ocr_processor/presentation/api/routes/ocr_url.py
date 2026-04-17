@@ -58,4 +58,5 @@ async def ocr_url(
         document_id=result.document_id,
         created_at=result.created_at,
         error=result.error,
+        markdown=result.markdown,
     )

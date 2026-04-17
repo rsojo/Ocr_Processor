@@ -27,4 +27,5 @@ class OCRResult:
     processing_time_ms: float
     engine: str
     confidence: Optional[float] = None
+    markdown: Optional[str] = None
     created_at: datetime = field(default_factory=_utcnow)

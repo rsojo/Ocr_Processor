@@ -19,3 +19,4 @@ class ProcessingStatus(str, Enum):
 class OCREngine(str, Enum):
     TESSERACT = "tesseract"
     PADDLEOCR = "paddleocr"
+    PDF_INSPECTOR = "pdf_inspector"

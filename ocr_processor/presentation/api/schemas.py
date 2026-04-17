@@ -22,3 +22,4 @@ class OCRResponse(BaseModel):
     document_id: UUID
     created_at: datetime
     error: Optional[str] = None
+    markdown: Optional[str] = None

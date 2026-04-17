@@ -8,3 +8,4 @@ pdf2image>=1.17.0
 Pillow>=10.2.0
 httpx>=0.27.0
 langdetect>=1.0.9
+maturin>=1.5.0
