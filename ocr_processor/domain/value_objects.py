@@ -20,3 +20,4 @@ class OCREngine(str, Enum):
     TESSERACT = "tesseract"
     PADDLEOCR = "paddleocr"
     PDF_INSPECTOR = "pdf_inspector"
+    HYBRID_PDF = "hybrid_pdf"

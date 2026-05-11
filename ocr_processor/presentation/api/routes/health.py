@@ -33,6 +33,26 @@ async def ready():
             },
         )
 
+    if engine == "hybrid_pdf":
+        try:
+            import fitz  # noqa: F401
+        except ImportError:
+            return JSONResponse(
+                status_code=503,
+                content={"status": "unavailable", "reason": "PyMuPDF is not installed"},
+            )
+        if not tesseract_available:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "status": "unavailable",
+                    "reason": (
+                        "tesseract not found at "
+                        f"{settings.tesseract_cmd} for scanned PDFs/images fallback"
+                    ),
+                },
+            )
+
     if engine == "pdf_inspector":
         try:
             import pdf_inspector  # noqa: F401
@@ -65,7 +85,7 @@ async def ready():
             },
         )
 
-    if engine not in {"pdf_inspector", "tesseract", "paddleocr"}:
+    if engine not in {"hybrid_pdf", "pdf_inspector", "tesseract", "paddleocr"}:
         return JSONResponse(
             status_code=503,
             content={"status": "unavailable", "reason": f"unknown OCR engine '{engine}'"},

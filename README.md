@@ -1,6 +1,6 @@
 # OCR Processor API
 
-A production-ready OCR service built with **Python + FastAPI**, following **Clean Architecture** and SOLID principles. Supports file upload and remote URL processing using **pdf-inspector** for text-based PDFs and **Tesseract OCR** for scanned PDFs/images, with a PaddleOCR extension point.
+A production-ready OCR service built with **Python + FastAPI**, following **Clean Architecture** and SOLID principles. Supports file upload and remote URL processing using native PDF text extraction for text-based PDFs and **Tesseract OCR** for scanned PDFs/images, with pdf-inspector and PaddleOCR extension points.
 
 ---
 
@@ -20,7 +20,8 @@ Key patterns:
 - **Dependency Injection** — FastAPI `Depends()` wires everything together.
 - **Repository** — `IFileStorage` / `IURLDownloader` abstract away I/O.
 - **Concurrent page OCR** — PDFs are split by page, processed concurrently, and reassembled in original order.
-- **Structured Markdown** — generated output includes page and structure markers (tables/graphics) for downstream parsing.
+- **Hybrid PDF extraction** — text-based pages use native PDF text via PyMuPDF, while scanned pages fall back to Tesseract OCR.
+- **Structured Markdown** — generated output includes page markers for downstream parsing.
 
 ---
 
@@ -42,7 +43,7 @@ cp .env.example .env          # set OCR_ENGINE=tesseract for local setup
 uvicorn ocr_processor.presentation.main:app --reload
 ```
 
-The default engine is `pdf_inspector`, which is fully provisioned by the Docker image. For a simple local setup, set `OCR_ENGINE=tesseract` unless you have built and installed `pdf-inspector` locally.
+The default engine is `hybrid_pdf`, which is fully provisioned by the Docker image. For a simple local setup, set `OCR_ENGINE=tesseract` unless you have installed PyMuPDF locally.
 
 Interactive docs: http://localhost:8000/docs
 
@@ -96,7 +97,7 @@ curl -X POST http://localhost:8000/api/v1/ocr/url \
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OCR_ENGINE` | `pdf_inspector` | OCR engine: `pdf_inspector`, `tesseract`, or `paddleocr` (`paddleocr` is not implemented yet) |
+| `OCR_ENGINE` | `hybrid_pdf` | OCR engine: `hybrid_pdf`, `pdf_inspector`, `tesseract`, or `paddleocr` (`paddleocr` is not implemented yet) |
 | `TESSERACT_CMD` | `/usr/bin/tesseract` | Path to the Tesseract binary |
 | `DEFAULT_OCR_LANGUAGE` | `eng` | Tesseract language code |
 | `MAX_FILE_SIZE_MB` | `20` | Max upload size in MB |

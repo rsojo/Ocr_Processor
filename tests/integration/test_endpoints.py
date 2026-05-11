@@ -27,6 +27,7 @@ def _make_ocr_result() -> OCRResult:
         page_count=1,
         processing_time_ms=12.3,
         engine=OCREngine.TESSERACT,
+        markdown="<!-- Page 1 -->\n\n## Page 1\n\nHello, World!",
     )
 
 
@@ -110,6 +111,7 @@ def test_upload_success(client):
     body = resp.json()
     assert body["status"] == "success"
     assert body["text"] == "Hello, World!"
+    assert body["markdown"] is not None
     assert body["engine"] == "tesseract"
     assert body["page_count"] == 1
     assert "request_id" in body
