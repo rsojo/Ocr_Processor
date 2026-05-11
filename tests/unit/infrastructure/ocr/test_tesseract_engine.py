@@ -18,7 +18,7 @@ def test_pdf_concurrent_processing_preserves_order_and_generates_markdown(monkey
         lambda _: "application/pdf",
     )
     monkeypatch.setattr(
-        "ocr_processor.infrastructure.ocr.tesseract_engine._convert_pdf_to_images",
+        "ocr_processor.infrastructure.ocr.tesseract_engine.convert_pdf_to_images",
         lambda _: pages,
     )
     monkeypatch.setattr(

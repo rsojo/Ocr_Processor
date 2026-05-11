@@ -1,6 +1,6 @@
 # OCR Processor API
 
-A production-ready OCR service built with **Python + FastAPI**, following **Clean Architecture** and SOLID principles. Supports file upload and remote URL processing using **Tesseract OCR** (with a PaddleOCR extension point).
+A production-ready OCR service built with **Python + FastAPI**, following **Clean Architecture** and SOLID principles. Supports file upload and remote URL processing using **pdf-inspector** for text-based PDFs and **Tesseract OCR** for scanned PDFs/images, with a PaddleOCR extension point.
 
 ---
 
@@ -36,10 +36,13 @@ docker compose up --build
 ### Local
 
 ```bash
-# Prerequisites: tesseract-ocr + poppler-utils installed on your OS
+# Prerequisites for OCR_ENGINE=tesseract: tesseract-ocr + poppler-utils installed on your OS
 pip install -r requirements-dev.txt
+cp .env.example .env          # set OCR_ENGINE=tesseract for local setup
 uvicorn ocr_processor.presentation.main:app --reload
 ```
+
+The default engine is `pdf_inspector`, which is fully provisioned by the Docker image. For a simple local setup, set `OCR_ENGINE=tesseract` unless you have built and installed `pdf-inspector` locally.
 
 Interactive docs: http://localhost:8000/docs
 
@@ -50,7 +53,7 @@ Interactive docs: http://localhost:8000/docs
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/api/v1/health` | Liveness check |
-| `GET` | `/api/v1/ready` | Readiness — verifies Tesseract is available |
+| `GET` | `/api/v1/ready` | Readiness — verifies dependencies for the configured OCR engine |
 | `POST` | `/api/v1/ocr/upload` | Upload a file, get extracted text |
 | `POST` | `/api/v1/ocr/url` | Provide a URL, download and extract text |
 
@@ -93,7 +96,7 @@ curl -X POST http://localhost:8000/api/v1/ocr/url \
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OCR_ENGINE` | `tesseract` | OCR engine: `tesseract` or `paddleocr` |
+| `OCR_ENGINE` | `pdf_inspector` | OCR engine: `pdf_inspector`, `tesseract`, or `paddleocr` (`paddleocr` is not implemented yet) |
 | `TESSERACT_CMD` | `/usr/bin/tesseract` | Path to the Tesseract binary |
 | `DEFAULT_OCR_LANGUAGE` | `eng` | Tesseract language code |
 | `MAX_FILE_SIZE_MB` | `20` | Max upload size in MB |
