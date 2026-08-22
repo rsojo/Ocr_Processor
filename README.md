@@ -57,6 +57,7 @@ Interactive docs: http://localhost:8000/docs
 | `GET` | `/api/v1/ready` | Readiness — verifies dependencies for the configured OCR engine |
 | `POST` | `/api/v1/ocr/upload` | Upload a file, get extracted text |
 | `POST` | `/api/v1/ocr/url` | Provide a URL, download and extract text |
+| `POST` | `/api/v1/ocr/searchable-pdf` | Upload a file, get back a PDF with an invisible OCR text layer |
 
 ### Upload a file
 
@@ -72,6 +73,24 @@ curl -X POST http://localhost:8000/api/v1/ocr/url \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com/document.pdf", "language": "eng"}'
 ```
+
+### Get back a searchable PDF
+
+Every page is OCR'd and re-emitted as a PDF with an invisible text layer — the file itself,
+not extracted text. `psm`, `dpi` and `language` are query parameters; the service's own
+defaults (`psm=3`, `dpi=300`, `language=DEFAULT_OCR_LANGUAGE`) are intentionally generic —
+callers with domain knowledge (e.g. a tabular bank statement, which needs `psm=6`) pass their
+own values.
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/ocr/searchable-pdf?language=spa&dpi=300&psm=6" \
+  -F "file=@scanned-statement.pdf;type=application/pdf" \
+  -o searchable.pdf
+```
+
+Response is the raw `application/pdf` bytes; metadata comes back in headers:
+`X-OCR-Request-Id`, `X-OCR-Page-Count`, `X-OCR-Engine`, `X-OCR-Language`, `X-OCR-Dpi`,
+`X-OCR-Psm`, `X-OCR-Processing-Ms`.
 
 ### Example response
 

@@ -10,7 +10,7 @@ from ocr_processor.presentation.api.middleware import (
     RequestIDMiddleware,
     add_exception_handlers,
 )
-from ocr_processor.presentation.api.routes import health, ocr_upload, ocr_url
+from ocr_processor.presentation.api.routes import health, ocr_searchable_pdf, ocr_upload, ocr_url
 
 
 @asynccontextmanager
@@ -51,6 +51,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router, prefix=prefix)
     app.include_router(ocr_upload.router, prefix=prefix)
     app.include_router(ocr_url.router, prefix=prefix)
+    app.include_router(ocr_searchable_pdf.router, prefix=prefix)
 
     return app
 

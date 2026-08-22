@@ -173,3 +173,109 @@ def test_url_invalid_scheme(mocker):
         )
     # Pydantic HttpUrl validation rejects non-http(s) → 422
     assert resp.status_code in (400, 422)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/v1/ocr/searchable-pdf
+# ---------------------------------------------------------------------------
+
+_SEARCHABLE_PDF_HEADERS = (
+    "X-OCR-Request-Id",
+    "X-OCR-Page-Count",
+    "X-OCR-Engine",
+    "X-OCR-Language",
+    "X-OCR-Dpi",
+    "X-OCR-Psm",
+    "X-OCR-Processing-Ms",
+)
+
+
+@pytest.fixture()
+def mock_searchable_pdf_engine(mocker):
+    from ocr_processor.infrastructure.ocr.searchable_pdf_engine import SearchablePdfResult
+
+    engine = mocker.MagicMock()
+    engine.to_searchable_pdf.return_value = SearchablePdfResult(
+        pdf_bytes=b"%PDF-1.4 fake searchable pdf",
+        page_count=1,
+        language="spa",
+        dpi=300,
+        psm=6,
+        processing_time_ms=42.0,
+    )
+    return engine
+
+
+@pytest.fixture()
+def searchable_pdf_client(mock_searchable_pdf_engine, mocker):
+    mocker.patch(
+        "ocr_processor.presentation.api.routes.ocr_searchable_pdf.TesseractSearchablePdfEngine",
+        return_value=mock_searchable_pdf_engine,
+    )
+    tmp_path = Path("/tmp/test_searchable_pdf.pdf")
+    mock_storage = mocker.MagicMock()
+    mock_storage.save.return_value = tmp_path
+    mocker.patch(
+        "ocr_processor.presentation.api.routes.ocr_searchable_pdf.TempFileStorage",
+        return_value=mock_storage,
+    )
+    app = create_app()
+    return TestClient(app)
+
+
+def test_searchable_pdf_success_headers_and_content_type(searchable_pdf_client):
+    resp = searchable_pdf_client.post(
+        "/api/v1/ocr/searchable-pdf",
+        files={"file": ("statement.pdf", b"%PDF-1.4 fake", "application/pdf")},
+        params={"language": "spa", "dpi": 300, "psm": 6},
+    )
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "application/pdf"
+    for header in _SEARCHABLE_PDF_HEADERS:
+        assert header in resp.headers
+    assert resp.headers["X-OCR-Page-Count"] == "1"
+    assert resp.headers["X-OCR-Language"] == "spa"
+    assert resp.headers["X-OCR-Dpi"] == "300"
+    assert resp.headers["X-OCR-Psm"] == "6"
+    assert resp.content == b"%PDF-1.4 fake searchable pdf"
+
+
+def test_searchable_pdf_defaults_are_generic_not_bank_specific(
+    searchable_pdf_client, mock_searchable_pdf_engine
+):
+    resp = searchable_pdf_client.post(
+        "/api/v1/ocr/searchable-pdf",
+        files={"file": ("statement.pdf", b"%PDF-1.4 fake", "application/pdf")},
+    )
+    assert resp.status_code == 200
+    _, kwargs = mock_searchable_pdf_engine.to_searchable_pdf.call_args
+    assert kwargs["dpi"] == 300
+    assert kwargs["psm"] == 3  # Tesseract's own default, not the bank's psm 6
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"psm": 99},
+        {"dpi": 5000},
+        {"language": "../etc"},
+    ],
+)
+def test_searchable_pdf_rejects_out_of_range_params(searchable_pdf_client, params):
+    resp = searchable_pdf_client.post(
+        "/api/v1/ocr/searchable-pdf",
+        files={"file": ("statement.pdf", b"%PDF-1.4 fake", "application/pdf")},
+        params=params,
+    )
+    assert resp.status_code == 422
+
+
+def test_searchable_pdf_invalid_mime_type(mocker):
+    """When validate_file is NOT patched, an unsupported type must 422."""
+    app = create_app()
+    with TestClient(app) as c:
+        resp = c.post(
+            "/api/v1/ocr/searchable-pdf",
+            files={"file": ("malware.exe", b"MZ\x00", "application/x-msdownload")},
+        )
+    assert resp.status_code == 422
